@@ -96,6 +96,20 @@ export class ImageMapService {
     });
   }
 
+  async getImageByCoords(coords: {lat, lng}) {
+    const x = Math.floor(coords.lng);
+    const y = Math.floor(coords.lat);
+    
+    const imageNumber = y * this.imagesPerRow + x;
+    console.log(imageNumber, coords); // DEBUG
+
+    if (imageNumber > this.maxImages || imageNumber < 0) {
+      console.error('Selection is out of range', imageNumber);  // DEBUG
+      return;
+    }
+    console.log('Selected:', await this.getImageRange(imageNumber)); // DEBUG
+  }
+
   getDimByZ(z: number) {
     switch (z) {
       case (1):

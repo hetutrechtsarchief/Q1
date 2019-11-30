@@ -17,7 +17,6 @@ export class ImageMapComponent implements OnInit {
     const map = L.map('map', { crs: L.CRS.Simple }).setView([3, 3], 0);
 
     // @ts-ignore
-    // @ts-ignore
     new TileLayerFunctional('/assets/demo/default.jpg', {
       maxNativeZoom: 2,
       maxZoom: 10,
@@ -36,6 +35,12 @@ export class ImageMapComponent implements OnInit {
         });
       }
     }).addTo(map);
+
+    map.on('click', (ev) => {
+      // Turn image number into query
+      // @ts-ignore
+      this.imageMap.getImageByCoords(ev.latlng);
+    });
   }
 
 }
