@@ -13,6 +13,7 @@ export class EntryModalComponent implements OnInit {
 
   ngOnInit() {
 
+    //ts-ignore
     $( '#add-object-input' ).autocomplete({
       source( request, response ) {
         $.ajax( {
