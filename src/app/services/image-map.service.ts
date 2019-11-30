@@ -26,7 +26,7 @@ interface Tile {
 export class ImageMapService {
   images;
   imagesPerRow = 1024;
-  maxVerticalTiles = 8;
+  maxVerticalTiles = 1;
 
   constructor(private sparql: SparqlService, private http: HttpClient) { }
 
@@ -35,28 +35,28 @@ export class ImageMapService {
     let y = 0;
     let z = 4;
 
+    console.warn(this.imagesPerRow * this.getDimByZ(1) * this.maxVerticalTiles);
 
     const query = `
       SELECT ?uuid WHERE {
         ?bbitem rdf:type <http://www.europeana.eu/schemas/edm/ProvidedCHO> .
         BIND(REPLACE(str(?bbitem), "https://hetutrechtsarchief.nl/id/", "") AS ?uuid)
-      } LIMIT ${ this.imagesPerRow * this.maxVerticalTiles }
+      } LIMIT ${ this.imagesPerRow * this.getDimByZ(1) * this.maxVerticalTiles }
     `;
     this.images = await this.sparql.query(environment.sparqlEndpoints.HuaBeeldbank, `${environment.sparqlPrefixes.HuaBeeldbank} ${query}`);
     console.log(this.images); // DEBUG
-    const tileImageMatrix = this.determineTileImages(z, x, y);
-    this.getTileUrl(tileImageMatrix, this.getDimByZ(z));
+    const tileImageList = this.determineTileImages(z, x, y);
+    this.getTileUrl(tileImageList, this.getDimByZ(z));
   }
 
-  getTileUrl(tileImageMatrix: string[][], dim: number) {
+  getTileUrl(tileImageList: string[], dim: number) {
     const payload = {
       head: {
         dim: dim
       },
-      body: tileImageMatrix
+      body: tileImageList
     };
-    console.log('started call');
-    console.log(payload);
+    console.log(payload); // DEBUG
     this.http.post('http://172.16.45.237:8081/post', payload).subscribe((response) => {
       console.log(response);
     });
@@ -64,30 +64,27 @@ export class ImageMapService {
 
   // XY: refers to tiles within the map
   // UV: refers to images within a single tile
-  determineTileImages(z, x, y): string[][] {
+  determineTileImages(z, x, y): string[] {
     const dimUV = this.getDimByZ(z);
     const dimXY = this.imagesPerRow / dimUV;
 
     // Cycle through all squares in the grid
-    const imageGrid: string[][] = [];
+    const imageList: string[] = [];
     for(let v = 0; v < dimUV; v++) { // per row
-      const imageRow: string[] = [];
       for(let u = 0; u < dimUV; u++) { // per column
         const imageNumber = y * Math.pow(dimXY, 2) * dimXY // Add all full tiles above it
           + v * dimUV * dimXY // Add all full lines above it in same-rowed tiles
           + x * dimUV // Add all full columns left to tile
           + u; // Add column within tile to the left
 
-        // Get image on the right level
         const currentImage = this.images.results.bindings[imageNumber].uuid.value;
-        imageRow.push(currentImage);
+        imageList.push(currentImage);
 
-        // imageRow.push(imageNumber.toString()); // DEBUG
+        // imageList.push(imageNumber.toString()); // DEBUG, use to verify correct ordering
       }
-      imageGrid.push(imageRow);
     }
-    console.log(imageGrid); // DEBUG
-    return imageGrid;
+    // console.log(imageList); // DEBUG
+    return imageList;
   }
 
   getDimByZ(z: number) {
