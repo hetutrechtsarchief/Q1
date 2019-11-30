@@ -26,6 +26,7 @@ interface Tile {
 export class ImageMapService {
   imagesPerRow = 1024;
   maxVerticalTiles = 1;
+  maxImages;
 
   constructor(private sparql: SparqlService, private http: HttpClient) { }
 
@@ -33,7 +34,7 @@ export class ImageMapService {
     let x = 0;
     let y = 0;
     let z = 4;
-    // console.warn(this.imagesPerRow * this.getDimByZ(1) * this.maxVerticalTiles); // DEBUG, amount of images on the screen
+    this.maxImages = this.imagesPerRow * this.getDimByZ(1) * this.maxVerticalTiles;
 
     const tileImageList = await this.determineTileImages(z, x, y);
     this.getTileUrl(tileImageList, this.getDimByZ(z));
