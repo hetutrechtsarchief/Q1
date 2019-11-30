@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import {SparqlService} from '../../services/sparql.service';
 import {environment} from '../../../environments/environment';
+import {md5} from './md5';
 
 @Component({
   selector: 'app-entry-modal',
@@ -16,7 +17,37 @@ export class EntryModalComponent implements OnInit {
   imageUrl = 'https://proxy.archieven.nl/download/39/' + this.beeldbankGuid;
 
   constructor(private sparql: SparqlService) { }
+  //https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=Qxxx&property=P18
 
+  async retrieveWikidata(wikidataId, linkIndex) {
+    // Get description
+    $.ajax({
+      url: '//www.wikidata.org/w/api.php',
+      data: { action: 'wbgetentities', ids: wikidataId, format: 'json' },
+      dataType: 'jsonp',
+      success: (x) => {
+        console.log(x);
+        console.log('wb label', x.entities[wikidataId].labels.en.value);
+        this.addedLinks[linkIndex]['description'] = x.entities[wikidataId].descriptions.en.value;
+      }
+    });
+
+    // Get image
+    $.ajax({
+      url: '//www.wikidata.org/w/api.php',
+      data: { action: 'wbgetclaims', entity: wikidataId, property: 'P18', format: 'json' },
+      dataType: 'jsonp',
+      success: (x) => {
+        const imageFileName = x.claims.P18[0].mainsnak.datavalue.value.replace(/\s/g, '_');
+        const md5Hash = md5(imageFileName);
+        const a = md5Hash[0];
+        const b = md5Hash[1];
+        this.addedLinks[linkIndex]['image'] = 'https://upload.wikimedia.org/wikipedia/commons/'
+          + a + '/' + a + b + '/' +
+          imageFileName;
+      }
+    });
+  }
   async retrieveTags() {
     let query: string;
     query = `
@@ -91,8 +122,11 @@ export class EntryModalComponent implements OnInit {
   onAddLink() {
     const object = $('#add-object-input').val();
     const objectURL = $('#add-object-selected-id a').attr('href');
+    const wikidataId = objectURL.replace("http://www.wikidata.org/entity/","");
     const predicate = $('#predicate-select').val();
-    this.addedLinks.push({predicate, object, url: objectURL});
+    this.addedLinks.push({predicate, object, url: objectURL, description: "Laden..."});
+
+    this.retrieveWikidata(wikidataId, this.addedLinks.length-1);
   }
 
 }

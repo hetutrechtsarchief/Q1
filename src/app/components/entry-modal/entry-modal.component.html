@@ -64,9 +64,11 @@
 
           <ul>
 
-            <li *ngFor="let addedLink of addedLinks"><b>{{addedLink.predicate}}: </b>
+            <div *ngFor="let addedLink of addedLinks"><b>{{addedLink.predicate}}: </b>
               <a target="_blank"href="{{addedLink.url}}">{{addedLink.object}}</a>
-            </li>
+              <p *ngIf="addedLink.description"><i>Beschrijving (wikidata): </i> {{addedLink.description}}</p>
+              <img class="wikidata-image" [src]="addedLink.image" *ngIf="addedLink.image"/>
+            </div>
           </ul>
         </div>
       </div>
