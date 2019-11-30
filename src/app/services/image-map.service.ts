@@ -37,13 +37,16 @@ export class ImageMapService {
     this.maxImages = this.imagesPerRow * this.getDimByZ(1) * this.maxVerticalTiles;
 
     const tileImageList = await this.determineTileImages(z, x, y);
-    this.getTileUrl(tileImageList, this.getDimByZ(z));
+    this.getTileUrl(tileImageList, this.getDimByZ(z), {x, y, z});
   }
 
-  getTileUrl(tileImageList: string[], dim: number) {
+  getTileUrl(tileImageList: string[], dim: number, {x, y, z}) {
     const payload = {
       head: {
-        dim: dim
+        dim: dim,
+        x: x,
+        y: y,
+        z: z
       },
       body: tileImageList
     };
