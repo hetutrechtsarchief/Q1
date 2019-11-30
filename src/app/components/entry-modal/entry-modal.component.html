@@ -62,14 +62,24 @@
             <i>Nog geen connecties toegevoegd... Voeg hierboven een connectie toe.</i>
           </p>
 
-          <ul>
-
-            <div *ngFor="let addedLink of addedLinks"><b>{{addedLink.predicate}}: </b>
-              <a target="_blank"href="{{addedLink.url}}">{{addedLink.object}}</a>
+          <div class="row" *ngFor="let addedLink of addedLinks; index as i">
+            <div class="col-md-11">
+              <b>{{addedLink.predicate}}: </b>
+              <a target="_blank" href="{{addedLink.url}}">{{addedLink.object}}</a>
               <p *ngIf="addedLink.description"><i>Beschrijving (wikidata): </i> {{addedLink.description}}</p>
-              <img class="wikidata-image" [src]="addedLink.image" *ngIf="addedLink.image"/>
+              <img class="wikidata-image mr-2" *ngFor="let image of addedLink.images" [src]="image"/>
+              <hr>
             </div>
-          </ul>
+
+            <div class="col-md-1">
+              <button type="button"
+                      class="btn btn-sm btn-link remove-button"
+                      (click)="onRemoveLink(i)">
+                ✕
+              </button>
+            </div>
+            <hr/>
+          </div>
         </div>
       </div>
 

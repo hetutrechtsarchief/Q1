@@ -38,13 +38,17 @@ export class EntryModalComponent implements OnInit {
       data: { action: 'wbgetclaims', entity: wikidataId, property: 'P18', format: 'json' },
       dataType: 'jsonp',
       success: (x) => {
-        const imageFileName = x.claims.P18[0].mainsnak.datavalue.value.replace(/\s/g, '_');
-        const md5Hash = md5(imageFileName);
-        const a = md5Hash[0];
-        const b = md5Hash[1];
-        this.addedLinks[linkIndex]['image'] = 'https://upload.wikimedia.org/wikipedia/commons/'
-          + a + '/' + a + b + '/' +
-          imageFileName;
+        const images = x.claims.P18;
+        for (let i = 0; i < images.length; i++ ){
+          const imageFileName = images[i].mainsnak.datavalue.value.replace(/\s/g, '_');
+          const md5Hash = md5(imageFileName);
+          const a = md5Hash[0];
+          const b = md5Hash[1];
+          const imageUrl = 'https://upload.wikimedia.org/wikipedia/commons/'
+            + a + '/' + a + b + '/' +
+            imageFileName;
+          this.addedLinks[linkIndex]['images'].push(imageUrl);
+        }
       }
     });
   }
@@ -87,14 +91,15 @@ export class EntryModalComponent implements OnInit {
 
   ($( '#add-object-input' ) as any).autocomplete({
       source( request, response ) {
-        $('#add-object-selected-id').text('Searching for matching terms...');
+        $('#add-object-selected-id').text('Termennetwerk doorzoeken...');
 
         $.ajax( {
           url: 'http://demo.netwerkdigitaalerfgoed.nl:8080/nde/graphql',
           contentType: 'application/json',
           type: 'POST',
           data: JSON.stringify({ query: 'query {\n' +
-              '  terms(match:"*' + request.term + '*" dataset:["wikidata"]) { dataset terms {uri prefLabel altLabel definition scopeNote } }\n' +
+              '  terms(match:"*' + request.term + '*" dataset:["wikidata"]) ' +
+              '{ dataset terms {uri prefLabel altLabel definition scopeNote } }\n' +
               '}',
             variables: null}),
           success(result) {
@@ -111,7 +116,7 @@ export class EntryModalComponent implements OnInit {
           }
         } );
       },
-      minLength: 3,
+      minLength: 5,
       select( event, ui ) {
         $('#add-object-selected-id').html('<a target="_blank" href="' + ui.item.wikiDataUri + '">' + ui.item.wikiDataUri + '</a>');
         // console.log( 'Selected: ' + ui.item.value + ' aka ' + ui.item.wikiDataUri );
@@ -119,12 +124,21 @@ export class EntryModalComponent implements OnInit {
     });
   }
 
+  onRemoveLink(i) {
+    this.addedLinks.splice(i,1);
+  }
+
   onAddLink() {
     const object = $('#add-object-input').val();
     const objectURL = $('#add-object-selected-id a').attr('href');
     const wikidataId = objectURL.replace("http://www.wikidata.org/entity/","");
     const predicate = $('#predicate-select').val();
-    this.addedLinks.push({predicate, object, url: objectURL, description: "Laden..."});
+    this.addedLinks.push({
+      predicate,
+      object,
+      url: objectURL,
+      description: "Laden...",
+      images: []});
 
     this.retrieveWikidata(wikidataId, this.addedLinks.length-1);
   }
