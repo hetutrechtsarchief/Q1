@@ -67,7 +67,9 @@
               <b>{{addedLink.predicate}}: </b>
               <a target="_blank" href="{{addedLink.url}}">{{addedLink.object}}</a>
               <p *ngIf="addedLink.description"><i>Beschrijving (wikidata): </i> {{addedLink.description}}</p>
-              <img class="wikidata-image mr-2" *ngFor="let image of addedLink.images" [src]="image"/>
+              <a target="_blank" *ngFor="let image of addedLink.images" [href]="image">
+                <img class="wikidata-image mr-2"  [src]="image"/>
+              </a>
               <hr>
             </div>
 
