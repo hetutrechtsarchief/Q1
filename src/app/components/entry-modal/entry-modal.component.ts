@@ -13,8 +13,7 @@ export class EntryModalComponent implements OnInit {
 
   ngOnInit() {
 
-    //ts-ignore
-    $( '#add-object-input' ).autocomplete({
+    ($( '#add-object-input' ) as any).autocomplete({
       source( request, response ) {
         $.ajax( {
           url: 'http://demo.netwerkdigitaalerfgoed.nl:8080/nde/graphql',
