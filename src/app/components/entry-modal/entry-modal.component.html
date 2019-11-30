@@ -27,6 +27,11 @@
       <p>
         Leg hieronder een connectie aan, om dit object te koppelen aan een nieuw kenmerk.
       </p>
+      <p>
+        Connecties worden gemaakt via het
+        <a href="https://www.netwerkdigitaalerfgoed.nl/kennis-en-voorzieningen/digitaal-erfgoed-bruikbaar/termennetwerk/">Termennetwerk</a>
+        , waardoor <i>meerdere terminologiebronnen</i> doorzocht kunnen worden.
+      </p>
       <div class="row">
         <div class="col-md-5">
           <form>
@@ -67,6 +72,14 @@
               <b>{{addedLink.predicate}}: </b>
               <a target="_blank" href="{{addedLink.url}}">{{addedLink.object}}</a>
               <p *ngIf="addedLink.description"><i>Beschrijving (wikidata): </i> {{addedLink.description}}</p>
+
+              <!-- Map -->
+              <iframe *ngIf="addedLink.coordinates" width="200" height="200"
+                      frameborder="0" scrolling="no" marginheight="0" marginwidth="0"
+                      [src]="getOpenStreetMapsSrc(i)">
+              </iframe><br/>
+
+              <!-- Image -->
               <a target="_blank" *ngFor="let image of addedLink.images" [href]="image">
                 <img class="wikidata-image mr-2"  [src]="image"/>
               </a>

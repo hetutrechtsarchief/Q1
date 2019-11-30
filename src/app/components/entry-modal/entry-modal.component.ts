@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import {SparqlService} from '../../services/sparql.service';
 import {environment} from '../../../environments/environment';
 import {md5} from './md5';
+import {DomSanitizer} from '@angular/platform-browser';
 
 @Component({
   selector: 'app-entry-modal',
@@ -16,8 +17,15 @@ export class EntryModalComponent implements OnInit {
   beeldbankGuid = '0003D2B2CF6E510F9A2BA5AE7AC62FB7';
   imageUrl = 'https://proxy.archieven.nl/download/39/' + this.beeldbankGuid;
 
-  constructor(private sparql: SparqlService) { }
-  //https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=Qxxx&property=P18
+  constructor(private sparql: SparqlService, private sanitizer : DomSanitizer) { }
+
+  getOpenStreetMapsSrc(linkIndex) {
+    const coords = this.addedLinks[linkIndex].coordinates;
+    const url = 'https://www.openstreetmap.org/export/embed.html?bbox=' +
+      coords.longMin + '%2C' + coords.latMin + '%2C' + coords.longMax + '%2C' + coords.latMax +
+      '&amp;layer=mapnik';
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
 
   async retrieveWikidata(wikidataId, linkIndex) {
     // Get description
@@ -28,18 +36,33 @@ export class EntryModalComponent implements OnInit {
       success: (x) => {
         console.log(x);
         console.log('wb label', x.entities[wikidataId].labels.en.value);
-        this.addedLinks[linkIndex]['description'] = x.entities[wikidataId].descriptions.en.value;
+        this.addedLinks[linkIndex].description = x.entities[wikidataId].descriptions.en.value;
       }
     });
 
     // Get image
     $.ajax({
       url: '//www.wikidata.org/w/api.php',
-      data: { action: 'wbgetclaims', entity: wikidataId, property: 'P18', format: 'json' },
+      data: { action: 'wbgetclaims', entity: wikidataId, format: 'json' },
       dataType: 'jsonp',
       success: (x) => {
+        // Coordinates
+        let coordinates = x.claims.P625;
+        if (coordinates !== undefined) {
+          coordinates = coordinates[0].mainsnak.datavalue.value;
+          console.log(coordinates);
+          const MARGIN = 0.0001;
+          this.addedLinks[linkIndex].coordinates = {
+            latMin: coordinates.latitude - MARGIN,
+            latMax: coordinates.latitude + MARGIN,
+            longMin: coordinates.longitude - MARGIN,
+            longMax: coordinates.longitude + MARGIN
+          };
+        }
+
+        // Images
         const images = x.claims.P18;
-        for (let i = 0; i < images.length; i++ ){
+        for (let i = 0; i < images.length; i++ ) {
           const imageFileName = images[i].mainsnak.datavalue.value.replace(/\s/g, '_');
           const md5Hash = md5(imageFileName);
           const a = md5Hash[0];
@@ -47,7 +70,7 @@ export class EntryModalComponent implements OnInit {
           const imageUrl = 'https://upload.wikimedia.org/wikipedia/commons/'
             + a + '/' + a + b + '/' +
             imageFileName;
-          this.addedLinks[linkIndex]['images'].push(imageUrl);
+          this.addedLinks[linkIndex].images.push(imageUrl);
         }
       }
     });
@@ -69,8 +92,8 @@ export class EntryModalComponent implements OnInit {
     $('#tag').html('<a target="_blank" href="' + wikidataUri + '">'
       + trefwoordLabel +
       '</a>');
-    $('#tag').attr('title', "Wikidata: " + wikidataUri + "\n" +
-      "HUA: " + trefwoordGuid);
+    $('#tag').attr('title', 'Wikidata: ' + wikidataUri + '\n' +
+      'HUA: ' + trefwoordGuid);
   }
 
   async retrieveDescription() {
@@ -125,22 +148,22 @@ export class EntryModalComponent implements OnInit {
   }
 
   onRemoveLink(i) {
-    this.addedLinks.splice(i,1);
+    this.addedLinks.splice(i, 1);
   }
 
   onAddLink() {
     const object = $('#add-object-input').val();
     const objectURL = $('#add-object-selected-id a').attr('href');
-    const wikidataId = objectURL.replace("http://www.wikidata.org/entity/","");
+    const wikidataId = objectURL.replace('http://www.wikidata.org/entity/', '');
     const predicate = $('#predicate-select').val();
     this.addedLinks.push({
       predicate,
       object,
       url: objectURL,
-      description: "Laden...",
+      description: 'Laden...',
       images: []});
 
-    this.retrieveWikidata(wikidataId, this.addedLinks.length-1);
+    this.retrieveWikidata(wikidataId, this.addedLinks.length - 1);
   }
 
 }
