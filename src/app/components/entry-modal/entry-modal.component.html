@@ -26,7 +26,7 @@
         <div class="col-md-5">
           <form>
             <div class="form-group">
-              <select class="form-control" id="exampleFormControlSelect1">
+              <select class="form-control" id="predicate-select">
                 <option>Toont locatie</option>
                 <option>Toont persoon</option>
                 <option>Verwant aan</option>
@@ -46,10 +46,21 @@
           </form>
         </div>
         <div class="col-md-1">
-          <button class="btn btn-primary">+</button>
+          <button class="btn btn-primary" (click)="onAddLink()">+</button>
         </div>
       </div>
 
+    </div>
+  </div>
+  <hr>
+  <div class="row">
+    <div class="col-md-12">
+      <h3>Huidige connecties</h3>
+      <ul>
+        <li *ngFor="let addedLink of addedLinks"><b>{{addedLink.predicate}}</b>
+          <a target="_blank"href="{{addedLink.url}}"> {{addedLink.object}}</a>
+        </li>
+      </ul>
     </div>
   </div>
 </div>
