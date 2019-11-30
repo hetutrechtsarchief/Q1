@@ -12,10 +12,31 @@ import {environment} from '../../../environments/environment';
 
 export class EntryModalComponent implements OnInit {
   addedLinks = [];
-  beeldbankGuid = '8744DB4D363D5B43BE56BFD03A251768';
+  beeldbankGuid = '0003D2B2CF6E510F9A2BA5AE7AC62FB7';
   imageUrl = 'https://proxy.archieven.nl/download/39/' + this.beeldbankGuid;
 
   constructor(private sparql: SparqlService) { }
+
+  async retrieveTags() {
+    let query: string;
+    query = `
+      SELECT ?trefwoordGuid ?trefwoordLabel ?wikidataUri WHERE {
+        <${'http://hetutrechtsarchief.nl/id/' + this.beeldbankGuid}> dct:subject ?trefwoordGuid .
+        ?trefwoordGuid rdfs:label ?trefwoordLabel .
+        ?trefwoordGuid owl:sameAs ?wikidataUri
+      } LIMIT 100
+    `;
+    const queryResult = await this.sparql.query(environment.sparqlEndpoints.HuaBeeldbank,
+      `${environment.sparqlPrefixes.HuaBeeldbank} ${query}`);
+    const trefwoordGuid = queryResult.results.bindings[0].trefwoordGuid.value;
+    const trefwoordLabel = queryResult.results.bindings[0].trefwoordLabel.value;
+    const wikidataUri = queryResult.results.bindings[0].wikidataUri.value;
+    $('#tag').html('<a target="_blank" href="' + wikidataUri + '">'
+      + trefwoordLabel +
+      '</a>');
+    $('#tag').attr('title', "Wikidata: " + wikidataUri + "\n" +
+      "HUA: " + trefwoordGuid);
+  }
 
   async retrieveDescription() {
     let query: string;
@@ -24,11 +45,14 @@ export class EntryModalComponent implements OnInit {
         <${'https://hetutrechtsarchief.nl/id/' + this.beeldbankGuid}> dc:description ?description .
       } LIMIT 100
     `;
-    const queryResult = await this.sparql.query(environment.sparqlEndpoints.HuaBeeldbank, `${environment.sparqlPrefixes.HuaBeeldbank} ${query}`);
+
+    const queryResult = await this.sparql.query(environment.sparqlEndpoints.HuaBeeldbank,
+      `${environment.sparqlPrefixes.HuaBeeldbank} ${query}`);
     $('#description').html('<i>Beschrijving</i>: ' + queryResult.results.bindings[0].description.value);
   }
   ngOnInit() {
   this.retrieveDescription();
+  this.retrieveTags();
 
   ($( '#add-object-input' ) as any).autocomplete({
       source( request, response ) {
@@ -68,7 +92,7 @@ export class EntryModalComponent implements OnInit {
     const object = $('#add-object-input').val();
     const objectURL = $('#add-object-selected-id a').attr('href');
     const predicate = $('#predicate-select').val();
-    this.addedLinks.push({predicate: predicate, object: object, url: objectURL});
+    this.addedLinks.push({predicate, object, url: objectURL});
   }
 
 }
