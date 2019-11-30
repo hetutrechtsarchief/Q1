@@ -24,7 +24,6 @@ interface Tile {
   providedIn: 'root'
 })
 export class ImageMapService {
-  images;
   imagesPerRow = 1024;
   maxVerticalTiles = 1;
 
@@ -86,9 +85,9 @@ export class ImageMapService {
         BIND(REPLACE(str(?bbitem), "https://hetutrechtsarchief.nl/id/", "") AS ?uuid)
       } LIMIT ${range} OFFSET ${imageNumber}
     `;
-    this.images = await this.sparql.query(environment.sparqlEndpoints.HuaBeeldbank, `${environment.sparqlPrefixes.HuaBeeldbank} ${query}`);
+    const images = await this.sparql.query(environment.sparqlEndpoints.HuaBeeldbank, `${environment.sparqlPrefixes.HuaBeeldbank} ${query}`);
 
-    return this.images.results.bindings.map((binding) => {
+    return images.results.bindings.map((binding) => {
       return binding.uuid.value;
     });
   }
