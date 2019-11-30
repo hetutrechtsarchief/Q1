@@ -16,7 +16,7 @@ export class EntryModalComponent implements OnInit {
     $( '#add-object-input' ).autocomplete({
       source( request, response ) {
         $('#add-object-selected-id').text("Searching for matching terms...");
-        
+
         $.ajax( {
           url: 'http://demo.netwerkdigitaalerfgoed.nl:8080/nde/graphql',
           contentType: 'application/json',
@@ -41,7 +41,7 @@ export class EntryModalComponent implements OnInit {
       },
       minLength: 3,
       select( event, ui ) {
-        $('#add-object-selected-id').html('Selected: <a target="_blank" href="' + ui.item.wikiDataUri + '">' + ui.item.wikiDataUri + '</a>');
+        $('#add-object-selected-id').html('<a target="_blank" href="' + ui.item.wikiDataUri + '">' + ui.item.wikiDataUri + '</a>');
         // console.log( 'Selected: ' + ui.item.value + ' aka ' + ui.item.wikiDataUri );
       }
     });
