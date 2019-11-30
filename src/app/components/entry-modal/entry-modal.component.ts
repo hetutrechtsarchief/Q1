@@ -13,7 +13,8 @@ export class EntryModalComponent implements OnInit {
   constructor() { }
 
   ngOnInit() {
-    $( '#add-object-input' ).autocomplete({
+
+    ($( '#add-object-input' ) as any).autocomplete({
       source( request, response ) {
         $('#add-object-selected-id').text("Searching for matching terms...");
 
