@@ -34,18 +34,9 @@ export class ImageMapService {
     let x = 0;
     let y = 0;
     let z = 4;
+    // console.warn(this.imagesPerRow * this.getDimByZ(1) * this.maxVerticalTiles); // DEBUG, amount of images on the screen
 
-    console.warn(this.imagesPerRow * this.getDimByZ(1) * this.maxVerticalTiles);
-
-    const query = `
-      SELECT ?uuid WHERE {
-        ?bbitem rdf:type <http://www.europeana.eu/schemas/edm/ProvidedCHO> .
-        BIND(REPLACE(str(?bbitem), "https://hetutrechtsarchief.nl/id/", "") AS ?uuid)
-      } LIMIT ${ this.imagesPerRow * this.getDimByZ(1) * this.maxVerticalTiles }
-    `;
-    this.images = await this.sparql.query(environment.sparqlEndpoints.HuaBeeldbank, `${environment.sparqlPrefixes.HuaBeeldbank} ${query}`);
-    console.log(this.images); // DEBUG
-    const tileImageList = this.determineTileImages(z, x, y);
+    const tileImageList = await this.determineTileImages(z, x, y);
     this.getTileUrl(tileImageList, this.getDimByZ(z));
   }
 
@@ -64,27 +55,42 @@ export class ImageMapService {
 
   // XY: refers to tiles within the map
   // UV: refers to images within a single tile
-  determineTileImages(z, x, y): string[] {
+  async determineTileImages(z, x, y): Promise<string[]> {
     const dimUV = this.getDimByZ(z);
     const dimXY = this.imagesPerRow / dimUV;
 
     // Cycle through all squares in the grid
     const imageList: string[] = [];
     for(let v = 0; v < dimUV; v++) { // per row
-      for(let u = 0; u < dimUV; u++) { // per column
-        const imageNumber = y * Math.pow(dimXY, 2) * dimXY // Add all full tiles above it
-          + v * dimUV * dimXY // Add all full lines above it in same-rowed tiles
-          + x * dimUV // Add all full columns left to tile
-          + u; // Add column within tile to the left
+      // Get number of first image in this row
+      const imageNumber = y * Math.pow(dimXY, 2) * dimXY // Add all full tiles above it
+        + v * dimUV * dimXY // Add all full lines above it in same-rowed tiles
+        + x * dimUV; // Add all full columns left to tile
 
-        const currentImage = this.images.results.bindings[imageNumber].uuid.value;
-        imageList.push(currentImage);
+      const imageRange = await this.getImageRange(imageNumber, dimUV);
+      imageRange.forEach((imageId) => {
+        imageList.push(imageId);
+      });
+      // console.log(imageRange); // DEBUG
 
-        // imageList.push(imageNumber.toString()); // DEBUG, use to verify correct ordering
-      }
+      // imageList.push(imageNumber.toString()); // DEBUG, use to verify correct ordering
     }
-    // console.log(imageList); // DEBUG
+    console.log(imageList); // DEBUG
     return imageList;
+  }
+
+  async getImageRange(imageNumber: number, range = 1): Promise<string[]> {
+    const query = `
+      SELECT ?uuid WHERE {
+        ?bbitem rdf:type <http://www.europeana.eu/schemas/edm/ProvidedCHO> .
+        BIND(REPLACE(str(?bbitem), "https://hetutrechtsarchief.nl/id/", "") AS ?uuid)
+      } LIMIT ${range} OFFSET ${imageNumber}
+    `;
+    this.images = await this.sparql.query(environment.sparqlEndpoints.HuaBeeldbank, `${environment.sparqlPrefixes.HuaBeeldbank} ${query}`);
+
+    return this.images.results.bindings.map((binding) => {
+      return binding.uuid.value;
+    });
   }
 
   getDimByZ(z: number) {
