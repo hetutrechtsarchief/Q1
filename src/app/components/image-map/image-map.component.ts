@@ -1,8 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import * as L from 'leaflet';
 import { TileLayerFunctional } from '../../helper/TileLayerFunctional';
-import { SparqlService } from '../../services/sparql.service';
-import { environment } from '../../../environments/environment';
+import { ImageMapService } from '../../services/image-map.service';
 
 @Component({
   selector: 'app-image-map',
@@ -11,20 +10,12 @@ import { environment } from '../../../environments/environment';
 })
 export class ImageMapComponent implements OnInit {
 
-  constructor(private sparql: SparqlService) { }
+  constructor(private imageMap: ImageMapService) { }
 
   async ngOnInit() {
-    const query = `
-      SELECT ?uuid WHERE {
-        ?bbitem dct:spatial <http://www.wikidata.org/entity/Q4352759> .
-        BIND(REPLACE(str(?bbitem), "https://hetutrechtsarchief.nl/id/", "") AS ?uuid)
-      } LIMIT 100
-    `;
-    console.log(await this.sparql.query(environment.sparqlEndpoints.HuaBeeldbank, `${environment.sparqlPrefixes.HuaBeeldbank} ${query}`));
-
+    this.imageMap.generateTile();
     const map = L.map('map', { crs: L.CRS.Simple }).setView([3, 3], 0);
 
-    // @ts-ignore
     // @ts-ignore
     new TileLayerFunctional('/assets/demo/default.jpg', {
       maxNativeZoom: 2,
@@ -44,6 +35,12 @@ export class ImageMapComponent implements OnInit {
         });
       }
     }).addTo(map);
+
+    map.on('click', (ev) => {
+      // Turn image number into query
+      // @ts-ignore
+      this.imageMap.getImageByCoords(ev.latlng);
+    });
   }
 
 }
