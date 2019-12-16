@@ -87,10 +87,15 @@ export class ImageMapService {
   private async getImageRange(imageNumber: number, range = 1): Promise<string[]> {
     const query = `
       SELECT ?uuid WHERE {
-        ?bbitem rdf:type <http://www.europeana.eu/schemas/edm/ProvidedCHO> ;
-                <http://semanticweb.cs.vu.nl/2009/11/sem/hasBeginTimeStamp> ?time .
-        BIND(REPLACE(str(?bbitem), "https://hetutrechtsarchief.nl/id/", "") AS ?uuid)
-      } ORDER BY ASC(?time) LIMIT ${range} OFFSET ${imageNumber}
+        {
+          SELECT ?uuid WHERE {
+              ?bbitem rdf:type <http://www.europeana.eu/schemas/edm/ProvidedCHO> ;
+                      <http://semanticweb.cs.vu.nl/2009/11/sem/hasBeginTimeStamp> ?time .
+              BIND(REPLACE(str(?bbitem), "https://hetutrechtsarchief.nl/id/", "") AS ?uuid)
+          }
+          ORDER BY ASC(?time)
+        }
+      } LIMIT ${range} OFFSET ${imageNumber}
     `;
     const images = await this.sparql.query(environment.sparqlEndpoints.HuaBeeldbank, `${environment.sparqlPrefixes.HuaBeeldbank} ${query}`);
 
