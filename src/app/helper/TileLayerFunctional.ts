@@ -43,6 +43,7 @@ export class TileLayerFunctional extends L.TileLayer {
 
   // Replicates original function, except for triggering loadActualTile().
   createTile(coords, done) {
+    console.log('worked');
     var tile = document.createElement('img');
 
     // @ts-ignore

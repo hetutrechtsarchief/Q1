@@ -30,17 +30,18 @@ export class ImageMapService {
 
   constructor(private sparql: SparqlService, private http: HttpClient) { }
 
-  async generateTile() {
-    let x = 0;
-    let y = 0;
-    let z = 4;
+  async generateTile(data): Promise<string>  {
+    console.log(data);
+    let x = data.x;
+    let y = data.y;
+    let z = data.z;
     this.maxImages = this.imagesPerRow * this.getDimByZ(1) * this.maxVerticalTiles;
 
     const tileImageList = await this.determineTileImages(z, x, y);
-    this.getTileUrl(tileImageList, this.getDimByZ(z), {x, y, z});
+    return this.getTileUrl(tileImageList, this.getDimByZ(z), {x, y, z});
   }
 
-  getTileUrl(tileImageList: string[], dim: number, {x, y, z}) {
+  private async getTileUrl(tileImageList: string[], dim: number, {x, y, z}): Promise<string> {
     const payload = {
       head: {
         dim: dim,
@@ -51,16 +52,17 @@ export class ImageMapService {
       body: tileImageList
     };
     console.log(payload); // DEBUG
-    this.http.post('http://172.16.45.237:8081/post', payload).subscribe((response) => {
-      console.log(response);
-    });
+    const response = await this.http.post('http://172.16.45.237:8081/post', payload).toPromise();
+    return response['url'];
   }
 
   // XY: refers to tiles within the map
   // UV: refers to images within a single tile
-  async determineTileImages(z, x, y): Promise<string[]> {
+  private async determineTileImages(z, x, y): Promise<string[]> {
     const dimUV = this.getDimByZ(z);
     const dimXY = this.imagesPerRow / dimUV;
+
+    console.log(z, x, y);
 
     // Cycle through all squares in the grid
     const imageList: string[] = [];
@@ -82,7 +84,7 @@ export class ImageMapService {
     return imageList;
   }
 
-  async getImageRange(imageNumber: number, range = 1): Promise<string[]> {
+  private async getImageRange(imageNumber: number, range = 1): Promise<string[]> {
     const query = `
       SELECT ?uuid WHERE {
         ?bbitem rdf:type <http://www.europeana.eu/schemas/edm/ProvidedCHO> ;
@@ -97,7 +99,7 @@ export class ImageMapService {
     });
   }
 
-  async getImageByCoords(coords: {lat, lng}) {
+  private async getImageByCoords(coords: {lat, lng}) {
     const x = Math.floor(coords.lng);
     const y = Math.floor(coords.lat);
 
@@ -111,7 +113,7 @@ export class ImageMapService {
     console.log('Selected:', await this.getImageRange(imageNumber)); // DEBUG
   }
 
-  getDimByZ(z: number) {
+  private getDimByZ(z: number) {
     switch (z) {
       case (1):
         return 64; // 2^6
