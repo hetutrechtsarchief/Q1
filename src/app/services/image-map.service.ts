@@ -6,8 +6,11 @@ import { HttpClient } from '@angular/common/http';
 interface Tile {
   head: {
     dim: number;
+    x: number;
+    y: number,
+    z: number;
   };
-  body: number[][];
+  body: string[]; // Is a flat list; the tile server must use the head vars to parse this correctly
 }
 
 // Tile mapping:
@@ -24,9 +27,7 @@ interface Tile {
   providedIn: 'root'
 })
 export class ImageMapService {
-  imagesPerRow = 1024;
-  maxVerticalTiles = 1;
-  maxImages;
+  imagesPerRow = 1024; // After images per row count has been reached, we will wrap to the next row
 
   constructor(private sparql: SparqlService, private http: HttpClient) { }
 
@@ -35,14 +36,13 @@ export class ImageMapService {
     let x = data.x;
     let y = data.y;
     let z = data.z;
-    this.maxImages = this.imagesPerRow * this.getDimByZ(1) * this.maxVerticalTiles;
 
     const tileImageList = await this.determineTileImages(z, x, y);
-    return this.getTileUrl(tileImageList, this.getDimByZ(z), {x, y, z});
+    return this.getTileUrl(tileImageList, ImageMapService.getDimByZ(z), {x, y, z});
   }
 
   private async getTileUrl(tileImageList: string[], dim: number, {x, y, z}): Promise<string> {
-    const payload = {
+    const payload: Tile = {
       head: {
         dim: dim,
         x: x,
@@ -59,10 +59,8 @@ export class ImageMapService {
   // XY: refers to tiles within the map
   // UV: refers to images within a single tile
   private async determineTileImages(z, x, y): Promise<string[]> {
-    const dimUV = this.getDimByZ(z);
+    const dimUV = ImageMapService.getDimByZ(z);
     const dimXY = this.imagesPerRow / dimUV;
-
-    console.log(z, x, y);
 
     // Cycle through all squares in the grid
     const imageList: string[] = [];
@@ -111,30 +109,32 @@ export class ImageMapService {
     const imageNumber = y * this.imagesPerRow + x;
     console.log(imageNumber, coords); // DEBUG
 
-    if (imageNumber > this.maxImages || imageNumber < 0) {
+    if (imageNumber < 0) {
       console.error('Selection is out of range', imageNumber);  // DEBUG
       return;
     }
+
+    // TODO: check if no image exists at that index (i.e., image number too high)
     console.log('Selected:', await this.getImageRange(imageNumber)); // DEBUG
   }
 
-  private getDimByZ(z: number) {
-    switch (z) {
-      case (1):
-        return 64; // 2^6
-      case (2):
-        return 32; // 2^5
-      case (3):
-        return 16; // 2^4
-      case (4):
-        return 8; // 2^3
-      case (5):
-        return 4; // 2^2
-      case (6):
-        return 2; // 2^1
-      case (7):
-        return 1; // 2^0
+  /**
+   * Mapping of z-index to images per row/col
+   * z > dim
+   * 1 > 64
+   * 2 > 32
+   * 3 > 16
+   * 4 > 8
+   * 5 > 4
+   * 6 > 2
+   * 7 > 1
+   * @param z
+   */
+  private static getDimByZ(z: number) {
+    if (z < 1 || z > 7) {
+      console.warn(`A z-value of ${z} may not be supported by the tile server.`);
     }
+    return Math.pow(2, 7 - z);
   }
 
 }
