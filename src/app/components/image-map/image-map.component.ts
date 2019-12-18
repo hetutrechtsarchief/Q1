@@ -13,11 +13,11 @@ export class ImageMapComponent implements OnInit {
   constructor(private imageMap: ImageMapService) { }
 
   async ngOnInit() {
-    const map = L.map('map', { crs: L.CRS.Simple }).setView([3, 3], 4);
+    const map = L.map('map', { crs: L.CRS.Simple }).setView([3, 3], 6);
 
     // @ts-ignore
     new TileLayerFunctional('/assets/demo/default.jpg', {
-      maxNativeZoom: 2,
+      maxNativeZoom: 7,
       maxZoom: 10,
       // minZoom: 4,
       // @ts-ignore
