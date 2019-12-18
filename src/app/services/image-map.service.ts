@@ -63,38 +63,51 @@ export class ImageMapService {
     const dimXY = this.imagesPerRow / dimUV;
 
     // Cycle through all squares in the grid
-    const imageList: string[] = [];
+    const imageNumberArray: number[] = [];
     for(let v = 0; v < dimUV; v++) { // per row
       // Get number of first image in this row
       const imageNumber = y * Math.pow(dimXY, 2) * dimXY // Add all full tiles above it
         + v * dimUV * dimXY // Add all full lines above it in same-rowed tiles
         + x * dimUV; // Add all full columns left to tile
 
-      const imageRange = await this.getImageRange(imageNumber, dimUV);
-      imageRange.forEach((imageId) => {
-        imageList.push(imageId);
-      });
-      // console.log(imageRange); // DEBUG
-
-      // imageList.push(imageNumber.toString()); // DEBUG, use to verify correct ordering
+      imageNumberArray.push(imageNumber);
     }
-    console.log(imageList); // DEBUG
-    return imageList;
+
+    return await this.getImageRange(imageNumberArray, dimUV);
   }
 
-  private async getImageRange(imageNumber: number, range = 1): Promise<string[]> {
-    const query = `
+  private async getImageRange(imageNumberArray: number[], range = 1): Promise<string[] | null>  {
+    let query = `
       SELECT ?uuid WHERE {
-        {
-          SELECT ?uuid WHERE {
-              ?bbitem rdf:type <http://www.europeana.eu/schemas/edm/ProvidedCHO> ;
-                      <http://semanticweb.cs.vu.nl/2009/11/sem/hasBeginTimeStamp> ?time .
-              BIND(REPLACE(str(?bbitem), "https://hetutrechtsarchief.nl/id/", "") AS ?uuid)
-          }
-          ORDER BY ASC(?time)
-        }
-      } LIMIT ${range} OFFSET ${imageNumber}
     `;
+
+    for (let imageNumber of imageNumberArray) {
+      if (imageNumber < 0) {
+        continue;
+      }
+      query = query + `
+        {
+            SELECT ?uuid WHERE  {
+              SELECT ?uuid WHERE {
+                  ?bbitem rdf:type <http://www.europeana.eu/schemas/edm/ProvidedCHO> ;
+                  <http://semanticweb.cs.vu.nl/2009/11/sem/hasBeginTimeStamp> ?time .
+                  BIND(REPLACE(str(?bbitem), "https://hetutrechtsarchief.nl/id/", "") AS ?uuid)
+              }
+              ORDER BY ASC(?time)
+             } LIMIT ${range} OFFSET ${imageNumber}
+        }
+        UNION`
+    }
+
+    query = query.slice(0, query.length - 5) + `}`;
+
+    // Check if query is not empty
+    if (query.trim() === `SELECT ?uuid WHERE {}`) {
+      return null;
+    }
+
+    console.log(query);
+
     const images = await this.sparql.query(environment.sparqlEndpoints.HuaBeeldbank, `${environment.sparqlPrefixes.HuaBeeldbank} ${query}`);
 
     return images.results.bindings.map((binding) => {
@@ -115,7 +128,7 @@ export class ImageMapService {
     }
 
     // TODO: check if no image exists at that index (i.e., image number too high)
-    console.log('Selected:', await this.getImageRange(imageNumber)); // DEBUG
+    console.log('Selected:', await this.getImageRange([imageNumber])); // DEBUG
   }
 
   /**
