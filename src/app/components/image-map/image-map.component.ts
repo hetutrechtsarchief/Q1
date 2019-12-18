@@ -19,7 +19,8 @@ export class ImageMapComponent implements OnInit {
     new TileLayerFunctional('/assets/demo/default.jpg', {
       maxNativeZoom: 7,
       maxZoom: 10,
-      // minZoom: 4,
+      minNativeZoom: 3,
+      minZoom: 3,
       // @ts-ignore
       tileLoaderFunction: async (data) => {
         const tile = await this.imageMap.generateTile(data);
