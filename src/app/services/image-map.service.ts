@@ -60,19 +60,21 @@ export class ImageMapService {
   // UV: refers to images within a single tile
   private async determineTileImages(z, x, y): Promise<string[]> {
     const dimUV = ImageMapService.getDimByZ(z);
-    const dimXY = this.imagesPerRow / dimUV;
+    const tilesPerRow = this.imagesPerRow / dimUV;
+    const imagesPerTile = Math.pow(dimUV, 2);
+    const imagesPerTileRow = tilesPerRow * imagesPerTile;
 
     // Cycle through all squares in the grid
     const imageNumberArray: number[] = [];
     for(let v = 0; v < dimUV; v++) { // per row
       // Get number of first image in this row
-      const imageNumber = y * Math.pow(dimXY, 2) * dimXY // Add all full tiles above it
-        + v * dimUV * dimXY // Add all full lines above it in same-rowed tiles
+      const imageNumber = y * imagesPerTileRow // Add all full tiles above it
+        + v * this.imagesPerRow // Add all full lines above it in same-rowed tiles
         + x * dimUV; // Add all full columns left to tile
 
       imageNumberArray.push(imageNumber);
     }
-
+    console.log(imageNumberArray); // DEBUG
     return await this.getImageRange(imageNumberArray, dimUV);
   }
 
