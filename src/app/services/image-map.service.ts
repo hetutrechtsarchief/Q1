@@ -13,35 +13,36 @@ interface Tile {
   body: string[]; // Is a flat list; the tile server must use the head vars to parse this correctly
 }
 
-// Tile mapping:
-// UNUSED 0: 128 map units
-// 1: 64 map units
-// 2: 32 map units
-// 3: 16 map units
-// 4: 8 map units
-// 5: 4 map units
-// 6: 2 map units
-// 7: 1 map units
-
 @Injectable({
   providedIn: 'root'
 })
 export class ImageMapService {
   imagesPerRow = 1024; // After images per row count has been reached, we will wrap to the next row
+                    // WARNING: make sure this is a power of 2, or expect trouble; the tile server
+                    // won't understand placement correctly if tile rows are not fully filled
 
   constructor(private sparql: SparqlService, private http: HttpClient) { }
 
   async generateTile(data): Promise<string>  {
-    console.log(data);
     let x = data.x;
     let y = data.y;
     let z = data.z;
+
+    // Check first if in range
+    if ( x < 0 || y < 0 || x >= this.imagesPerRow / ImageMapService.getDimByZ(z)) {
+      return null;
+    }
 
     const tileImageList = await this.determineTileImages(z, x, y);
     return this.getTileUrl(tileImageList, ImageMapService.getDimByZ(z), {x, y, z});
   }
 
   private async getTileUrl(tileImageList: string[], dim: number, {x, y, z}): Promise<string> {
+    // Check if payload is empty. If so, don't replace default url
+    if (tileImageList.length === 0) {
+      return null;
+    }
+
     const payload: Tile = {
       head: {
         dim: dim,
@@ -52,7 +53,8 @@ export class ImageMapService {
       body: tileImageList
     };
     console.log(payload); // DEBUG
-    const response = await this.http.post('http://172.16.45.237:8081/post', payload).toPromise();
+
+    const response = await this.http.post('http://172.20.10.3:8080/post.php', payload).toPromise();
     return response['url'];
   }
 
@@ -78,7 +80,7 @@ export class ImageMapService {
     return await this.getImageRange(imageNumberArray, dimUV);
   }
 
-  private async getImageRange(imageNumberArray: number[], range = 1): Promise<string[] | null>  {
+  private async getImageRange(imageNumberArray: number[], range = 1): Promise<string[]>  {
     let query = `
       SELECT ?uuid WHERE {
     `;
@@ -105,10 +107,9 @@ export class ImageMapService {
 
     // Check if query is not empty
     if (query.trim() === `SELECT ?uuid WHERE {}`) {
-      return null;
+      console.warn('Empty tile selection; all indices were out of range / negative.');
+      return [];
     }
-
-    console.log(query);
 
     const images = await this.sparql.query(environment.sparqlEndpoints.HuaBeeldbank, `${environment.sparqlPrefixes.HuaBeeldbank} ${query}`);
 
@@ -135,7 +136,8 @@ export class ImageMapService {
 
   /**
    * Mapping of z-index to images per row/col
-   * z > dim
+   * z > dim / map units
+   * 0 > 128 (WARNING: Unsupported)
    * 1 > 64
    * 2 > 32
    * 3 > 16

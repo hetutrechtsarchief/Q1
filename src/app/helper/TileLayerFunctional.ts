@@ -43,7 +43,6 @@ export class TileLayerFunctional extends L.TileLayer {
 
   // Replicates original function, except for triggering loadActualTile().
   createTile(coords, done) {
-    console.log('worked');
     var tile = document.createElement('img');
 
     // @ts-ignore
@@ -77,7 +76,10 @@ export class TileLayerFunctional extends L.TileLayer {
 
   //
   async loadActualTile(coords, tile) {
-    tile.src = await this.getActualTileUrl(coords);
+    const actualTileUrl = await this.getActualTileUrl(coords);
+    if (actualTileUrl) {
+      tile.src = actualTileUrl;
+    } // else, don't replace
   }
 
   async getActualTileUrl(coords): Promise<string> {

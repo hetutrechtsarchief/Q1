@@ -13,7 +13,7 @@ export class ImageMapComponent implements OnInit {
   constructor(private imageMap: ImageMapService) { }
 
   async ngOnInit() {
-    const map = L.map('map', { crs: L.CRS.Simple }).setView([3, 3], 6);
+    const map = L.map('map', { crs: L.CRS.Simple }).setView([3, 3], 7);
 
     // @ts-ignore
     new TileLayerFunctional('/assets/demo/default.jpg', {
@@ -24,7 +24,12 @@ export class ImageMapComponent implements OnInit {
       // @ts-ignore
       tileLoaderFunction: async (data) => {
         const tile = await this.imageMap.generateTile(data);
-        console.log(tile);
+
+        if (tile == null) {
+          console.warn(data, tile);
+        } else {
+          console.log(data, tile);
+        }
         return tile;
       }
     }).addTo(map);
